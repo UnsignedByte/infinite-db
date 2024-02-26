@@ -1,3 +1,4 @@
 *.db
 *.json
 *.txt
+*.db-journal
