@@ -129,7 +129,7 @@ function ElementDetails({ data }) {
         {data.yield} unique elements.
       </p>
       <p>
-        This element can be created {data.freq} different ways, without using
+        This element has been created {data.freq} different ways without using
         itself.
       </p>
       <div className="flex recipecolumns">
