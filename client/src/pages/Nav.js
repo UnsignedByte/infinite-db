@@ -30,7 +30,7 @@ export default function Nav() {
   };
 
   return (
-    <div className="Nav">
+    <div className="Nav flex">
       <div className="col">
         <h1>Infinite Craft Database</h1>
         <span>

@@ -114,6 +114,50 @@ app.get("/api/element", (req, res) => {
   });
 });
 
+app.get("/api/recipes/:filter(input|output)", (req, res) => {
+  if (!req.query.text) {
+    res.status(400).json({ error: "No text query provided" });
+    return;
+  }
+
+  const term = decodeURIComponent(req.query.text); // Get the search term from the query parameter
+  const offset = Number(req.query.offset || 0);
+  const limit = Number(req.query.limit || 10);
+
+  const type = req.params.filter;
+
+  const query =
+    type === "input"
+      ? [
+          `SELECT * FROM recipes WHERE input1 = ? OR input2 = ? ORDER BY output ASC`,
+          [term, term],
+        ]
+      : [
+          `SELECT * FROM recipes WHERE output = ? ORDER BY input1, input2 ASC`,
+          [term],
+        ];
+
+  db.all(...query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const l = rows.length;
+
+    if (limit > 0) {
+      rows = rows.slice(offset, offset + limit);
+    } else {
+      rows = rows.slice(offset);
+    }
+
+    res.status(200).json({
+      recipes: rows,
+      count: l,
+    });
+  });
+});
+
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 

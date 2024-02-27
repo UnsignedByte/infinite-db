@@ -9,11 +9,6 @@ h2 {
   width: 100%;
 }
 
-.Nav {
-  display: flex;
-  align-items: center;
-}
-
 .Nav .col:nth-child(2) {
   flex-grow: 10;
   padding-left: 1.5em;
