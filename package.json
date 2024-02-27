@@ -12,6 +12,8 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "npm start --prefix client",
-    "install-client": "npm install --prefix client"
+    "install-client": "npm install --prefix client",
+    "build": "npm run build --prefix client",
+    "prod": "npm run build && node server/index.js"
   }
 }
