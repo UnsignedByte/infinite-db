@@ -1,4 +1,4 @@
-name: playground
+name: infinite-db
 channels:
   - defaults
   - conda-forge
