@@ -219,7 +219,7 @@ def summarize(cur):
         "SELECT COUNT(*) FROM elements WHERE recipe_count = 0"
     ).fetchone()[0]
 
-    print(f"{purple}Database summary for {args.source}:{reset}")
+    print(f"{purple}Database summary:{reset}")
     print(f"  {num_elements} elements")
     print(f"  {num_recipes} recipes")
     print(f"  {num_discovered} newly discovered elements")
