@@ -8,11 +8,13 @@ dependencies:
   - pip
   - gensim
   - numpy
+  - nodejs==16.13.0
   - pip:
-    - requests
-    - matplotlib
-    - numpy
-    - cython
-    - POT
-    - gensim
-    - wordfreq
+      - requests
+      - matplotlib
+      - fuzzywuzzy
+      - numpy
+      - cython
+      - POT
+      - gensim
+      - wordfreq

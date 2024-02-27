@@ -15,6 +15,7 @@ import numpy as np
 from wordfreq import word_frequency
 from wordfreq.preprocess import preprocess_text
 from wordfreq.tokens import lossy_tokenize
+from os import path
 
 # Set up logging
 log = logging.getLogger(__name__)
@@ -340,7 +341,7 @@ def main():
         log.error("Invalid arguments")
         exit(1)
 
-    con = sqlite3.connect("infinite_craft.db")
+    con = sqlite3.connect(path.join(path.dirname(__file__), "infinite_craft.db"))
     cur = con.cursor()
 
     # Insert default elements if they don't exist

@@ -1,8 +1,11 @@
 import sqlite3
 import json
 from utils import recalculate_depth_tree, norm_recipe, recalculate_yield
+from os import path
 
-con = sqlite3.connect("infinite_craft.db")
+root = path.dirname(__file__)
+
+con = sqlite3.connect(path.join(root, "infinite_craft.db"))
 cur = con.cursor()
 
 # Enable foreign keys
@@ -34,7 +37,7 @@ cur.execute(
 )
 
 # Load JSON data
-with open("infinitecraft.json", "r") as f:
+with open(path.join(root, "infinitecraft.json"), "r") as f:
     data = json.load(f)
 
 # Insert elements

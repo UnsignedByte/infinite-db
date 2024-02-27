@@ -303,13 +303,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze the infinite_craft database")
 
     parser.add_argument(
-        "--source",
-        help="The database file to analyze",
-        type=str,
-        default="infinite_craft.db",
-    )
-
-    parser.add_argument(
         "--summary",
         help="Print a summary of the database",
         action="store_true",
@@ -326,7 +319,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    con = sqlite3.connect(args.source)
+    con = sqlite3.connect(path.join(root, "infinite_craft.db"))
     cur = con.cursor()
 
     if args.json:

@@ -1,0 +1,15 @@
+{
+  "short_name": "IC Database",
+  "name": "Infinite Craft Database",
+  "icons": [
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "250x250"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
