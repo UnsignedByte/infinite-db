@@ -1,43 +1,59 @@
 import "./Nav.css";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Nav() {
   const [stats, setStats] = useState({
-    count: 0,
-    recipes: 0,
+    count: "?",
+    recipes: "?",
   });
 
   useEffect(() => {
-    console.log("Fetching stats");
-
     fetch("/api/stats")
-      .then((res) => {
-        console.log(res);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => setStats(data));
   }, []);
+
+  const [searchText, setSearchText] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    if (searchText.trim() !== "") {
+      navigate(`/element/${encodeURIComponent(searchText)}`);
+    }
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="Nav">
       <div className="col">
         <h1>Infinite Craft Database</h1>
-        <h2>
-          Currently crawling {stats.count} elements and
+        <span>
+          Currently contains {stats.count} elements and
           <br />
           {stats.recipes} recipes from the game{" "}
           <a href="https://neal.fun/infinite-craft">Infinite Craft</a>
-        </h2>
+        </span>
       </div>
       <div className="col">
         <input
           className="search"
           type="text"
           placeholder="Search for an item"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyPress={handleKeyPress}
         />
       </div>
       <div className="col">
-        <button className="button">Search</button>
+        <button className="button" onClick={handleSearch}>
+          Search
+        </button>
       </div>
       <div className="col">
         <button className="button">Random</button>

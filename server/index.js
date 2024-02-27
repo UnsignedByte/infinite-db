@@ -33,7 +33,6 @@ app.use(cors());
 app.use(express.static("client/build"));
 
 app.get("/api/stats", (req, res) => {
-  console.log("Fetching stats");
   db.get(
     ` SELECT 
         COUNT(*) AS count,
@@ -52,7 +51,6 @@ app.get("/api/stats", (req, res) => {
           res.status(500).json({ error: err.message });
           return;
         }
-        console.log(`Returning stats: ${JSON.stringify({ ...row1, ...row2 })}`);
 
         res.status(200).json({ ...row1, ...row2 });
       });
@@ -67,7 +65,7 @@ app.get("/api/similar", (req, res) => {
     return;
   }
 
-  const term = req.query.text; // Get the search term from the query parameter
+  const term = decodeURIComponent(req.query.text); // Get the search term from the query parameter
 
   // First, check if the term is in the database
   db.all(`SELECT text FROM elements`, [], (err, rows) => {
@@ -83,11 +81,36 @@ app.get("/api/similar", (req, res) => {
     const similar = fuzz
       .extract(term, words, {
         scorer: fuzz.token_set_ratio,
-        limit: 5,
+        limit: 10,
       })
       .map((item) => item[0]);
 
     res.status(200).json(similar);
+  });
+});
+
+app.get("/api/element", (req, res) => {
+  // error if text is not provided
+  if (!req.query.text) {
+    res.status(400).json({ error: "No text query provided" });
+    return;
+  }
+
+  const term = decodeURIComponent(req.query.text); // Get the search term from the query parameter
+
+  // Get the term from the database
+  db.get(`SELECT * FROM elements WHERE text = ?`, [term], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (!row) {
+      res.status(404).json({ error: "Element not found" });
+      return;
+    }
+
+    res.status(200).json(row);
   });
 });
 
