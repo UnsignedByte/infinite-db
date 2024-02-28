@@ -6,15 +6,19 @@ p {
   margin-left: 1em;
 }
 
-.input {
+th.left, td.left {
   text-align: left;
 }
 
-.output {
+th.right, td.right {
   text-align: right;
 }
 
-.RecipeTable td, th {
+th.center, td.center {
+  text-align: center;
+}
+
+td, th {
   padding: 0.2em 0.5em;
 }
 
