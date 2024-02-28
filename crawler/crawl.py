@@ -79,7 +79,7 @@ def combine(a, b):
                 print(a, b, j)
             return (j["result"], j["isNew"], j["emoji"])
         except TimeoutError as e:
-            log.error(f"Failed to combine {a} and {b}: {e}")
+            log.error(f"Timed Out {a} and {b}: {e}")
             log.debug(f"Retrying in 1 Minute")
             time.sleep(60)
         except Exception as e:
