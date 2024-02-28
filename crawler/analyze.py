@@ -7,6 +7,7 @@ import os
 import numpy as np
 from fuzzywuzzy import process
 from fuzzywuzzy import fuzz
+from utils import recalculate_depth_tree, recalculate_yield
 
 # ANSI escape codes for color
 red = "\033[1;31m"
@@ -317,10 +318,26 @@ if __name__ == "__main__":
 
     parser.add_argument("--json", help="Output playable JSON", action="store_true")
 
+    parser.add_argument(
+        "--recalculate-yield", help="Recalculate the yield", action="store_true"
+    )
+
+    parser.add_argument(
+        "--recalculate-depth", help="Recalculate the depth", action="store_true"
+    )
+
     args = parser.parse_args()
 
     con = sqlite3.connect(path.join(root, "infinite_craft.db"))
     cur = con.cursor()
+
+    if args.recalculate_depth:
+        recalculate_depth_tree(con, cur)
+        print(f"{green}Recalculated depth{reset}")
+
+    if args.recalculate_yield:
+        recalculate_yield(con, cur)
+        print(f"{green}Recalculated yield{reset}")
 
     if args.json:
         # Only output elements

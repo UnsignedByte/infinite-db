@@ -237,7 +237,7 @@ def insert_combination(args, con, cur, a: str, b: str, timer_start=None) -> bool
     time.sleep(
         max(
             0.0,
-            random.uniform(0.15, 0.25)
+            random.uniform(0.1, 0.2)
             - (datetime.datetime.now() - timer_start).total_seconds(),
         )
     )
@@ -341,7 +341,9 @@ def main():
         log.error("Invalid arguments")
         exit(1)
 
-    con = sqlite3.connect(path.join(path.dirname(__file__), "infinite_craft.db"))
+    root = path.dirname(__file__)
+
+    con = sqlite3.connect(path.join(root, "infinite_craft.db"))
     cur = con.cursor()
 
     # Insert default elements if they don't exist
@@ -712,7 +714,7 @@ def main():
                     probabilities = probabilities / probabilities.sum()
 
                 # print words and probabilities sorted
-                with open("tmp.txt", "w") as f:
+                with open(path.join(root, "tmp.txt"), "w") as f:
                     f.write(
                         "\n".join(
                             f"{x}: {p:.4e}"
