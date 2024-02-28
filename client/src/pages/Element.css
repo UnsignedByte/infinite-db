@@ -56,7 +56,7 @@ td, th {
   text-align: center;
 }
 
-.Element button.link {
+.RecipeTable button.link, .recipecolumns button.link {
   color: white;
   font-size: 0.9em;
 }
