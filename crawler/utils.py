@@ -68,6 +68,7 @@ def recalculate_yield(con, cur):
     # Set all counts to 0
     cur.execute("UPDATE elements SET yield = 0")
     cur.execute("UPDATE elements SET recipe_count = 0")
+    cur.execute("UPDATE elements SET freq = 0")
 
     # Loop through all the recipes
     recipes = cur.execute("SELECT * FROM recipes").fetchall()

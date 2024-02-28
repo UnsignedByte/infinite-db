@@ -178,7 +178,7 @@ app.get(
     const query =
       type === "input"
         ? [
-            `SELECT * FROM recipes WHERE input1 = ? OR input2 = ? ORDER BY output ASC`,
+            `SELECT * FROM recipes WHERE input1 = ? OR input2 = ? AND output <> "Nothing" ORDER BY output ASC`,
             [term, term],
           ]
         : [
