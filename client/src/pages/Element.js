@@ -129,6 +129,8 @@ function ElementDetails({ data }) {
   const [path, setPath] = useState([]);
 
   useEffect(() => {
+    // first reset the data
+    setPath([]);
     fetch(`/api/path?text=${encodeURIComponent(data.text)}`)
       .then((res) => res.json())
       .then((data) => setPath(data));
