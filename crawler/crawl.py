@@ -56,11 +56,17 @@ def combine(a, b):
     s = requests.Session()
     s.headers.update(
         {
+            "authority": "neal.fun",
+            "Accept": "*/*",
             "Referer": "https://neal.fun/infinite-craft/",
             "Origin": "https://neal.fun",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
             "Sec-Ch-Ua-Platform": "Windows",
             "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122"',
         }
     )
     for _ in range(10):
@@ -726,15 +732,11 @@ def main():
 
                 # choose random elements
                 a = np.random.choice(
-                    elements, size=args.batch, p=probabilities
-                ).tolist()
-
-                b = np.random.choice(
-                    elements, size=args.batch, p=probabilities
+                    elements, size=args.batch, p=probabilities, replace=False
                 ).tolist()
 
                 # Loop through all pairs of elements
-                for x, y in zip(a, b):
+                for x, y in itertools.combinations_with_replacement(a, 2):
                     insert_combination(args, con, cur, x, y)
         elif args.algorithm == "explore":
             # Get all elements
