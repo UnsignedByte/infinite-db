@@ -60,3 +60,12 @@ a {
   display: flex;
   align-items: center;
 } 
+
+button.link {
+  /* A button that looks like a link */
+  background-color: transparent;
+  border: none;
+  color: #61dafb;
+  padding: 0;
+  font-size: 1em;
+}

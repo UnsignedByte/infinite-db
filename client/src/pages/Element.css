@@ -27,7 +27,7 @@ td, th {
   width: 100%;
 }
 
-.RecipeTable button {
+.RecipeTable button:not(.link) {
   font-size: 0.9em;
   padding: 0.2em 0.4em;
   border-radius: 0.4em;
@@ -54,4 +54,9 @@ td, th {
 .recipecolumns h3 {
   width: 100%;
   text-align: center;
+}
+
+.Element button.link {
+  color: white;
+  font-size: 0.9em;
 }

@@ -12,15 +12,15 @@ function Similar({ text, similar }) {
       <ul>
         {similar.map((s) => (
           <li key={s}>
-            <a
-              href="#"
+            <button
+              className="link"
               onClick={(e) => {
                 e.preventDefault();
                 navigate(`/element/${encodeURIComponent(s)}`);
               }}
             >
               {s}
-            </a>
+            </button>
           </li>
         ))}
       </ul>
@@ -90,6 +90,13 @@ function RecipeTable({ text, type }) {
       .then(concatRecipes);
   };
 
+  const navigate = useNavigate();
+
+  const gotoElement = (e, text) => {
+    e.preventDefault();
+    navigate(`/element/${encodeURIComponent(text)}`);
+  };
+
   return (
     <div className="RecipeTable">
       <table>
@@ -103,9 +110,30 @@ function RecipeTable({ text, type }) {
         <tbody>
           {recipes.recipes.map((row, i) => (
             <tr key={i}>
-              <td className="left">{row.input1}</td>
-              <td className="left">{row.input2}</td>
-              <td className="right">{row.output}</td>
+              <td className="left">
+                <button
+                  className="link"
+                  onClick={(e) => gotoElement(e, row.input1)}
+                >
+                  {row.input1}
+                </button>
+              </td>
+              <td className="left">
+                <button
+                  className="link"
+                  onClick={(e) => gotoElement(e, row.input2)}
+                >
+                  {row.input2}
+                </button>
+              </td>
+              <td className="right">
+                <button
+                  className="link"
+                  onClick={(e) => gotoElement(e, row.output)}
+                >
+                  {row.output}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -135,6 +163,13 @@ function ElementDetails({ data }) {
       .then((res) => res.json())
       .then((data) => setPath(data));
   }, [data.text]);
+
+  const navigate = useNavigate();
+
+  const gotoElement = (e, text) => {
+    e.preventDefault();
+    navigate(`/element/${encodeURIComponent(text)}`);
+  };
 
   return (
     <div>
@@ -170,11 +205,32 @@ function ElementDetails({ data }) {
               <tbody>
                 {path.map((row) => (
                   <tr key={row.output}>
-                    <td className="left">{row.input1}</td>
+                    <td className="left">
+                      <button
+                        className="link"
+                        onClick={(e) => gotoElement(e, row.input1)}
+                      >
+                        {row.input1}
+                      </button>
+                    </td>
                     <td className="center">+</td>
-                    <td className="left">{row.input2}</td>
+                    <td className="left">
+                      <button
+                        className="link"
+                        onClick={(e) => gotoElement(e, row.input2)}
+                      >
+                        {row.input2}
+                      </button>
+                    </td>
                     <td className="center">=</td>
-                    <td className="left">{row.output}</td>
+                    <td className="left">
+                      <button
+                        className="link"
+                        onClick={(e) => gotoElement(e, row.output)}
+                      >
+                        {row.output}
+                      </button>
+                    </td>
                     <td className="right">{row.depth}</td>
                   </tr>
                 ))}
