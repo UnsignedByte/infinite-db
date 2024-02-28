@@ -1,9 +1,10 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Nav from "./Nav";
 import { useState, useEffect } from "react";
 import "./Element.css";
 
 function Similar({ text, similar }) {
+  const navigate = useNavigate();
   return (
     <div>
       <h2>Element {text} not found in the database.</h2>
@@ -11,7 +12,15 @@ function Similar({ text, similar }) {
       <ul>
         {similar.map((s) => (
           <li key={s}>
-            <a href={`/element/${encodeURIComponent(s)}`}>{s}</a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/element/${encodeURIComponent(s)}`);
+              }}
+            >
+              {s}
+            </a>
           </li>
         ))}
       </ul>
