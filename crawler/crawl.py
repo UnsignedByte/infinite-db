@@ -59,7 +59,8 @@ def combine(a, b):
             "Referer": "https://neal.fun/infinite-craft/",
             "Origin": "https://neal.fun",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
-            "Sec-Fetch-Site": "Same-Origin",
+            "Sec-Ch-Ua-Platform": "Windows",
+            "Sec-Fetch-Site": "same-origin",
         }
     )
     for _ in range(10):
@@ -402,15 +403,10 @@ def main():
                     "SELECT text FROM elements ORDER BY RANDOM() LIMIT ?",
                     (args.batch,),
                 ).fetchall()
-                b_s = cur.execute(
-                    "SELECT text FROM elements ORDER BY RANDOM() LIMIT ?",
-                    (args.batch,),
-                ).fetchall()
 
                 a_s = [x for x, in a_s]
-                b_s = [x for x, in b_s]
 
-                for a, b in zip(a_s, b_s):
+                for a, b in itertools.combinations_with_replacement(a_s, 2):
                     insert_combination(args, con, cur, a, b)
         elif args.algorithm in ["max-yield", "min-uses", "max-freq"]:
             while True:
