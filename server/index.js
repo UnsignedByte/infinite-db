@@ -58,6 +58,26 @@ app.get("/api/stats", (req, res) => {
   );
 });
 
+app.get("/api/random", (req, res) => {
+  db.get(
+    `SELECT text FROM elements ORDER BY RANDOM() LIMIT 1`,
+    [],
+    (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+
+      if (!row) {
+        res.status(404).json({ error: "Element not found" });
+        return;
+      }
+
+      res.status(200).json(row);
+    }
+  );
+});
+
 app.get("/api/similar", (req, res) => {
   // error if text is not provided
   if (!req.query.text) {
