@@ -23,6 +23,14 @@ export default function Nav() {
     }
   };
 
+  const handleRandom = () => {
+    fetch("/api/random")
+      .then((res) => res.json())
+      .then((data) => {
+        navigate(`/element/${encodeURIComponent(data.text)}`);
+      });
+  };
+
   const handleKeyPress = (event) => {
     if (event.key === "Enter") {
       handleSearch();
@@ -56,7 +64,9 @@ export default function Nav() {
         </button>
       </div>
       <div className="col">
-        <button className="button">Random</button>
+        <button className="button" onClick={handleRandom}>
+          Random
+        </button>
       </div>
     </div>
   );

@@ -86,17 +86,17 @@ function RecipeTable({ text, type }) {
       <table>
         <thead>
           <tr>
-            <th className="input">Input 1</th>
-            <th className="input">Input 2</th>
-            <th className="output">Output</th>
+            <th className="left">Input 1</th>
+            <th className="left">Input 2</th>
+            <th className="right">Output</th>
           </tr>
         </thead>
         <tbody>
           {recipes.recipes.map((row, i) => (
             <tr key={i}>
-              <td className="input">{row.input1}</td>
-              <td className="input">{row.input2}</td>
-              <td className="output">{row.output}</td>
+              <td className="left">{row.input1}</td>
+              <td className="left">{row.input2}</td>
+              <td className="right">{row.output}</td>
             </tr>
           ))}
         </tbody>
@@ -117,6 +117,14 @@ function RecipeTable({ text, type }) {
 }
 
 function ElementDetails({ data }) {
+  const [path, setPath] = useState([]);
+
+  useEffect(() => {
+    fetch(`/api/path?text=${encodeURIComponent(data.text)}`)
+      .then((res) => res.json())
+      .then((data) => setPath(data));
+  }, [data.text]);
+
   return (
     <div>
       <h2>
@@ -132,7 +140,37 @@ function ElementDetails({ data }) {
         This element has been created {data.freq} different ways without using
         itself.
       </p>
+
       <div className="flex recipecolumns">
+        <div className="col">
+          <h3>Example way to Make {data.text}</h3>
+          <div>
+            <table>
+              <thead>
+                <tr>
+                  <th className="left">Input 1</th>
+                  <th className="center">+</th>
+                  <th className="left">Input 2</th>
+                  <th className="center">=</th>
+                  <th className="left">Output</th>
+                  <th className="right">Depth</th>
+                </tr>
+              </thead>
+              <tbody>
+                {path.map((row) => (
+                  <tr key={row.output}>
+                    <td className="left">{row.input1}</td>
+                    <td className="center">+</td>
+                    <td className="left">{row.input2}</td>
+                    <td className="center">=</td>
+                    <td className="left">{row.output}</td>
+                    <td className="right">{row.depth}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
         <div className="col">
           <h3>Recipes Using {data.text}</h3>
           <RecipeTable text={data.text} type="input" />
