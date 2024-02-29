@@ -51,24 +51,28 @@ logging.addLevelName(
     logging.ERROR, f"{red}{logging.getLevelName(logging.ERROR)}{reset}"
 )
 
+headers = {
+    "authority": "neal.fun",
+    "method": "GET",
+    "scheme": "https",
+    "Accept": "*/*",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://neal.fun/infinite-craft/",
+    "Origin": "https://neal.fun",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+    "Sec-Ch-Ua-Platform": "Windows",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122"',
+}
+s = requests.Session()
+s.headers.update(headers)
+
 
 def combine(a, b):
-    s = requests.Session()
-    s.headers.update(
-        {
-            "authority": "neal.fun",
-            "Accept": "*/*",
-            "Referer": "https://neal.fun/infinite-craft/",
-            "Origin": "https://neal.fun",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
-            "Sec-Ch-Ua-Platform": "Windows",
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122"',
-        }
-    )
     for _ in range(10):
         try:
             # print(s.headers)
@@ -76,10 +80,13 @@ def combine(a, b):
                 f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
                 timeout=10,
             )
+            s.cookies.update(r.cookies)
             if r.status_code == 500:
                 raise Exception("Internal Server Error")
             elif r.status_code == 429:
                 raise TimeoutError("Rate Limited")
+            elif r.status_code == 403:
+                raise Exception("Forbidden")
             elif r.status_code != 200:
                 raise Exception(r.status_code)
             j = json.loads(r.content)
@@ -278,6 +285,7 @@ def main():
 
     parser.add_argument(
         "--algorithm",
+        "-a",
         type=str,
         default="bfs",
         help="The algorithm to use to discover new elements",
@@ -292,6 +300,7 @@ def main():
 
     parser.add_argument(
         "--search",
+        "-s",
         type=str,
         nargs="+",
         help="The elements to start the search from",
