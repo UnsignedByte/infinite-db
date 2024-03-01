@@ -1,6 +1,30 @@
-import "./Nav.css";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { LinkStyle, ButtonStyle, InputStyle } from "../styles";
+import { styled, css } from "styled-components";
+
+const SearchStyle = css`
+  padding: 1.2em;
+  outline: none;
+  border-radius: 0.8em;
+  box-sizing: border-box;
+  font-size: 1.1em;
+  width: 100%;
+`;
+
+const Button = styled.button`
+  ${ButtonStyle}
+  ${SearchStyle}
+`;
+
+const SearchBar = styled.input`
+  ${InputStyle}
+  ${SearchStyle}
+`;
+
+const Link = styled.button`
+  ${LinkStyle}
+`;
 
 export default function Nav() {
   const [stats, setStats] = useState({
@@ -45,12 +69,19 @@ export default function Nav() {
           Currently contains {stats.count} elements and
           <br />
           {stats.recipes} recipes from the game{" "}
-          <a href="https://neal.fun/infinite-craft">Infinite Craft</a>
+          <Link onClick={() => window.open("https://neal.fun/infinite-craft/")}>
+            Infinite Craft
+          </Link>
         </span>
       </div>
-      <div className="col">
-        <input
-          className="search"
+      <div
+        className="col"
+        style={{
+          "flex-grow": "10",
+          "padding-left": "1.5em",
+        }}
+      >
+        <SearchBar
           type="text"
           placeholder="Search for an item"
           value={searchText}
@@ -59,14 +90,13 @@ export default function Nav() {
         />
       </div>
       <div className="col">
-        <button className="button" onClick={handleSearch}>
-          Search
-        </button>
+        <Button onClick={handleSearch}>Search</Button>
       </div>
       <div className="col">
-        <button className="button" onClick={handleRandom}>
-          Random
-        </button>
+        <Button onClick={handleRandom}>Random</Button>
+      </div>
+      <div className="col">
+        <Button onClick={() => navigate("/")}>Home</Button>
       </div>
     </div>
   );

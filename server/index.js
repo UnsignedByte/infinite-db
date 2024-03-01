@@ -6,6 +6,8 @@ const fuzz = require("fuzzball");
 const cors = require("cors");
 const helmet = require("helmet");
 
+const utils = require("./utils");
+
 const port = process.env.PORT || 3001;
 
 const root = path.join(__dirname, "../");
@@ -113,22 +115,37 @@ app.get(
 
       // Create a list of all words
       const words = rows.map((row) => row.text);
+      const limit = Number(req.query.limit || 100);
 
       // Use fuzzball to find the most similar word
-      const similar = fuzz
-        .extract(term, words, {
-          scorer: fuzz.token_set_ratio,
-          limit: 10,
-        })
-        .map((item) => item[0]);
+      const similar = fuzz.extract(term, words, {
+        scorer: fuzz.token_set_ratio,
+        limit,
+      });
 
-      res.status(200).json(similar);
+      // sort by score and then alphabetically
+      similar.sort((a, b) => {
+        if (a[1] === b[1]) {
+          return a[0].localeCompare(b[0]);
+        }
+        return b[1] - a[1];
+      });
+
+      utils
+        .getElements(
+          db,
+          similar.map((s) => s[0]),
+          true
+        )
+        .then((rows) => {
+          res.status(200).json(rows);
+        });
     });
   }
 );
 
 app.get(
-  "/api/element",
+  "/api/elements?",
   cors({
     origin: "same-origin",
   }),
@@ -142,19 +159,34 @@ app.get(
     const term = decodeURIComponent(req.query.text); // Get the search term from the query parameter
 
     // Get the term from the database
-    db.get(`SELECT * FROM elements WHERE text = ?`, [term], (err, row) => {
-      if (err) {
+    utils
+      .getElements(db, [term])
+      .then((rows) => {
+        if (!rows[0]) {
+          res.status(404).json({ error: "Element not found" });
+          return;
+        }
+
+        res.status(200).json(rows[0]);
+      })
+      .catch((err) => {
         res.status(500).json({ error: err.message });
-        return;
-      }
+      });
+  }
+);
 
-      if (!row) {
-        res.status(404).json({ error: "Element not found" });
-        return;
-      }
-
-      res.status(200).json(row);
-    });
+app.post(
+  "/api/elements?",
+  cors({
+    origin: "same-origin",
+  }),
+  (req, res) => {
+    // get the post data
+    req.body
+      .json()
+      .then((data) => getElements(db, data))
+      .then((rows) => res.status(200).json(rows))
+      .catch((err) => res.status(500).json({ error: err.message }));
   }
 );
 
@@ -200,10 +232,9 @@ app.get(
         rows = rows.slice(offset);
       }
 
-      res.status(200).json({
-        recipes: rows,
-        count: l,
-      });
+      utils
+        .elaborateRecipes(db, rows)
+        .then((rows) => res.status(200).json({ recipes: rows, count: l }));
     });
   }
 );
@@ -309,8 +340,60 @@ app.get(
       // sort by depth
       paths.sort((a, b) => a.depth - b.depth);
 
-      res.status(200).json(paths);
+      // Get all unique elements in the path
+      utils
+        .elaborateRecipes(db, paths)
+        .then((rows) => res.status(200).json(rows));
     });
+  }
+);
+
+app.get(
+  "/api/sort",
+  cors({
+    origin: "same-origin",
+  }),
+  (req, res) => {
+    const key = req.query.key || "depth";
+    const descending = req.query.descending === "true";
+    const offset = Number(req.query.offset || 0);
+    const limit = Number(req.query.limit || 100);
+
+    const boolDesc = (d) => (d ? "DESC" : "ASC");
+
+    const keymap = {
+      text: "text",
+      length: "LENGTH(text)",
+      depth: "depth",
+      discovered: "discovered",
+      recipe_count: "recipe_count",
+      freq: "freq",
+      yield: `CASE WHEN
+          recipe_count = 0
+          THEN 0
+          ELSE CAST(yield as REAL) / recipe_count
+        END ${boolDesc(descending)}, recipe_count`,
+    };
+
+    if (!(key in keymap)) {
+      res.status(400).json({ error: "Invalid sort key" });
+      return;
+    }
+
+    db.all(
+      `SELECT * FROM elements ORDER BY ${keymap[key]} ${
+        descending ? "DESC" : "ASC"
+      }, text LIMIT ? OFFSET ?`,
+      [limit, offset],
+      (err, rows) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+
+        res.status(200).json(rows);
+      }
+    );
   }
 );
 
