@@ -224,24 +224,15 @@ function ElementDetails({ data }) {
                 {path.map((row, i) => (
                   <tr key={i}>
                     <td className="left">
-                      <Element
-                        emoji={row.input1.emoji}
-                        text={row.input1.text}
-                      />
+                      <Element element={row.input1} />
                     </td>
                     <td className="center">+</td>
                     <td className="left">
-                      <Element
-                        emoji={row.input2.emoji}
-                        text={row.input2.text}
-                      />
+                      <Element element={row.input2} />
                     </td>
                     <td className="center">=</td>
                     <td className="left">
-                      <Element
-                        emoji={row.output.emoji}
-                        text={row.output.text}
-                      />
+                      <Element element={row.output} />
                     </td>
                     <td className="right">{row.depth}</td>
                   </tr>
