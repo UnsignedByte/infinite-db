@@ -229,7 +229,7 @@ def insert_combination(args, con, cur, a: str, b: str, timer_start=None) -> bool
                 "UPDATE elements SET yield = yield + 1 WHERE text = ?",
                 (a,),
             )
-        if (
+        if a != b and (
             cur.execute(
                 """
             SELECT COUNT(*) FROM recipes WHERE output = ? AND (input1 = ? OR input2 = ?)

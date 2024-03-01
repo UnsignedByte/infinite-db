@@ -201,7 +201,7 @@ function ElementDetails({ data }) {
       <div
         className="flex wrap"
         style={{
-          "justify-content": "space-between",
+          "justify-content": "space-evenly",
           "align-items": "first baseline",
           width: "100%",
         }}
