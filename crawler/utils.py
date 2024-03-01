@@ -13,7 +13,6 @@ def recalculate_depth_tree(con, cur):
     cur.execute(
         "UPDATE elements SET depth = 0 WHERE text IN ('Water', 'Fire', 'Wind', 'Earth')"
     )
-    con.commit()
 
     # Loop through the elements and recipes to find the depth of each element
 
@@ -43,8 +42,6 @@ def recalculate_depth_tree(con, cur):
 
         depth += 1
 
-        # updates = 0
-
         # Update the depth of the output elements
         for recipe in recipes:
             # # count if this element was updated
@@ -57,11 +54,7 @@ def recalculate_depth_tree(con, cur):
                 "UPDATE elements SET depth = COALESCE(MIN(depth, ?), ?) WHERE text = ?",
                 (depth, depth, recipe[0]),
             )
-
-        # If no new elements were updated, break
-        # if updates == 0:
-        #     break
-        con.commit()
+    con.commit()
 
 
 def recalculate_yield(con, cur):
