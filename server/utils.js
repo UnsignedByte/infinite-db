@@ -14,7 +14,9 @@ function getElements(db, elements, short = false) {
   const promises = elements.map((e) =>
     dbGet(
       db,
-      `SELECT ${short ? "text, emoji" : "*"} FROM elements WHERE text = ?`,
+      `SELECT ${
+        short ? "text, emoji, discovered" : "*"
+      } FROM elements WHERE text = ?`,
       [e]
     )
   );

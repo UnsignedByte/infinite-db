@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { TextStyle, ButtonStyle } from "../styles";
 import { styled } from "styled-components";
+import { COLORS } from "../styles";
 
 const Button = styled.button`
   ${ButtonStyle}
@@ -20,25 +21,31 @@ const Button = styled.button`
 `;
 
 // UI for a single element
-export default function Element({ emoji, text }) {
+export default function Element({ element }) {
   const navigate = useNavigate();
   return (
     <Button
       onClick={(e) => {
         e.preventDefault();
-        navigate(`/element/${encodeURIComponent(text)}`);
+        navigate(`/element/${encodeURIComponent(element.text)}`);
       }}
     >
-      {emoji && (
+      {element.emoji && (
         <span
           style={{
             "margin-right": "0.5em",
           }}
         >
-          {emoji}
+          {element.emoji}
         </span>
       )}
-      <span>{text}</span>
+      <span
+        style={{
+          color: element.discovered ? "yellow" : colors.neutral100,
+        }}
+      >
+        {element.text}
+      </span>
     </Button>
   );
 }
