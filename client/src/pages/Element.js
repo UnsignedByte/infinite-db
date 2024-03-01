@@ -41,7 +41,7 @@ export default function Element({ element }) {
       )}
       <span
         style={{
-          color: element.discovered ? "yellow" : colors.neutral100,
+          color: element.discovered ? COLORS.primary100 : COLORS.neutral100,
         }}
       >
         {element.text}

@@ -16,7 +16,7 @@ export default function ElementList({ elements, showMore }) {
       <div className="flex wrap">
         {elements.map((s) => (
           <div class="col">
-            <Element emoji={s.emoji} text={s.text} />
+            <Element element={s} />
           </div>
         ))}
       </div>
