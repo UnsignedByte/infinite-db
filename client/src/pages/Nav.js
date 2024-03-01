@@ -20,6 +20,10 @@ const Button = styled.button`
 const SearchBar = styled.input`
   ${InputStyle}
   ${SearchStyle}
+
+  &:hover {
+    box-shadow: 0 0 0.3em ${(props) => props.theme.colors.primary75};
+  }
 `;
 
 const Link = styled.button`
