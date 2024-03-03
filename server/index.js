@@ -34,6 +34,11 @@ app.use(cors());
 // Use static files from the build folder
 app.use(express.static("client/build"));
 
+// catch all other routes that are not the api and serve the index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(root, "client/build", "index.html"));
+});
+
 app.get(
   "/api/stats",
   cors({

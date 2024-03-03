@@ -2,14 +2,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Root from "./pages/Root";
 import ElementPage from "./pages/ElementPage";
-import { createHashRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { COLORS } from "./styles";
 import { ThemeProvider } from "styled-components";
 import { createGlobalStyle } from "styled-components";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
-const router = createHashRouter([
+const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
