@@ -17,4 +17,5 @@ dependencies:
       - cython
       - POT
       - gensim
+      - python-Levenshtein
       - wordfreq
