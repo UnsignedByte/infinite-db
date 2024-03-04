@@ -17,6 +17,7 @@ export default function Root() {
     { value: "length", label: "Text Length" },
     { value: "recipe_count", label: "Number of Uses" },
     { value: "freq", label: "Ways Created" },
+    { value: "discovered", label: "First Discovery" },
     { value: "yield", label: "Yield" },
   ];
 
