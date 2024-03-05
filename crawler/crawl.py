@@ -137,7 +137,7 @@ def main():
     log.info(f"Starting crawler with {args.algorithm} algorithm")
 
     try:
-        with multiprocessing.Pool(8) as pool:
+        with multiprocessing.Pool(10) as pool:
             if args.algorithm == "bfs":
                 idx = args.bfs_start
                 while True:
@@ -323,7 +323,7 @@ def main():
                     insert_combination(log, pool, args, con, cur, queue)
 
                     results = []
-                    for (a, b) in queue:
+                    for a, b in queue:
                         res = cur.execute(
                             "SELECT output FROM recipes WHERE input1 = ? AND input2 = ?",
                             norm_recipe(a, b),

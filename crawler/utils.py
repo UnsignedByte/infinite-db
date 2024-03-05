@@ -20,9 +20,14 @@ def norm_recipe(*recipe):
     return tuple(sorted(recipe))
 
 
-def recalculate_depth_tree(con, cur):
+def remove_nothings(con, cur):
     # Delete all recipes with Nothing as an input
     cur.execute("DELETE FROM recipes WHERE input1 = 'Nothing' OR input2 = 'Nothing'")
+
+    con.commit()
+
+
+def recalculate_depth_tree(con, cur):
 
     # Set depth of all elements to NULL
     cur.execute("UPDATE elements SET depth = NULL")
@@ -306,10 +311,12 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
 
 
 def insert_combination(log, pool, args, con, cur, inputs):
-    log.info(f"Pushing new batch with {len(inputs)} items")
     # Filter out numeric elements
     if args.skip_numeric:
         inputs = [(a, b) for a, b in inputs if not (is_numeric(a) or is_numeric(b))]
+
+    # Filter out elements with Nothing as an input
+    inputs = [(a, b) for a, b in inputs if a != "Nothing" and b != "Nothing"]
 
     # normalize
     inputs = [norm_recipe(a, b) for a, b in inputs]
@@ -327,40 +334,49 @@ def insert_combination(log, pool, args, con, cur, inputs):
         == 0
     ]
 
+    log.info(f"Pushing new batch with {len(inputs)} items")
+
     results = []
 
-    for a, b in inputs:
-        results.append(
-            pool.apply_async(
-                async_insert_combination,
-                args=(log, a, b),
+    try:
+        for a, b in inputs:
+            results.append(
+                pool.apply_async(
+                    async_insert_combination,
+                    args=(log, a, b),
+                )
             )
-        )
 
-        newres = []
+            newres = []
+            for r in results:
+                if not r.ready():
+                    newres.append(r)
+                else:
+                    a, b, result, is_new, emoji = r.get()
+                    insert_recipe(log, cur, con, a, b, result, emoji, is_new)
+
+            results = newres
+
+            # Wait
+            time.sleep(
+                max(
+                    0.0,
+                    random.uniform(0.1, 0.12),
+                )
+            )
+
+        text_results = []
+
         for r in results:
-            if not r.ready():
-                newres.append(r)
-            else:
-                a, b, result, is_new, emoji = r.get()
-                insert_recipe(log, cur, con, a, b, result, emoji, is_new)
-
-        results = newres
-
-        # Wait
-        time.sleep(
-            max(
-                0.0,
-                random.uniform(0.1, 0.2),
-            )
-        )
-
-    text_results = []
-
-    for r in results:
-        a, b, result, is_new, emoji = r.get()
-        text_results.append(result)
-        insert_recipe(log, cur, con, a, b, result, emoji, is_new)
+            a, b, result, is_new, emoji = r.get()
+            text_results.append(result)
+            insert_recipe(log, cur, con, a, b, result, emoji, is_new)
+    except KeyboardInterrupt:
+        log.error("Keyboard Interrupt")
+        # Cancel all the tasks
+        for r in results:
+            r.cancel()
+        raise
 
     return text_results
 

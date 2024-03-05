@@ -7,7 +7,7 @@ import os
 import numpy as np
 from fuzzywuzzy import process
 from fuzzywuzzy import fuzz
-from utils import recalculate_depth_tree, recalculate_yield
+from utils import recalculate_depth_tree, recalculate_yield, remove_nothings
 
 # ANSI escape codes for color
 red = "\033[1;31m"
@@ -326,10 +326,19 @@ if __name__ == "__main__":
         "--recalculate-depth", help="Recalculate the depth", action="store_true"
     )
 
+    parser.add_argument(
+        "--remove-nothings",
+        help="Remove recipes with 'Nothing' as an input",
+        action="store_true",
+    )
+
     args = parser.parse_args()
 
     con = sqlite3.connect(path.join(root, "infinite_craft.db"))
     cur = con.cursor()
+
+    if args.remove_nothings:
+        remove_nothings(con, cur)
 
     if args.recalculate_depth:
         recalculate_depth_tree(con, cur)
