@@ -137,7 +137,7 @@ def main():
     log.info(f"Starting crawler with {args.algorithm} algorithm")
 
     try:
-        with multiprocessing.Pool(10) as pool:
+        with multiprocessing.Pool(20) as pool:
             if args.algorithm == "bfs":
                 idx = args.bfs_start
                 while True:
@@ -196,7 +196,7 @@ def main():
                 while True:
                     # Get all the elements in random order
                     elements = cur.execute(
-                        'SELECT text FROM elements WHERE text <> "Nothing" ORDER BY RANDOM()'
+                        "SELECT text FROM elements WHERE text <> 'Nothing' ORDER BY RANDOM()"
                     ).fetchall()
                     elements = [x for x, in elements]
 
@@ -207,7 +207,7 @@ def main():
                         _a = cur.execute(
                             """
                             SELECT text, yield, recipe_count FROM elements
-                                WHERE text <> "Nothing"
+                                WHERE text <> 'Nothing'
                                     AND recipe_count < ?
                                 ORDER BY (CAST(yield as REAL) / (recipe_count + 1)) DESC LIMIT ?
                             """,
@@ -218,7 +218,7 @@ def main():
                         _a = cur.execute(
                             """
                             SELECT text, yield, recipe_count FROM elements
-                                WHERE text <> "Nothing"
+                                WHERE text <> 'Nothing'
                                     AND recipe_count < ?
                                     AND recipe_count = (SELECT MIN(recipe_count) FROM elements WHERE recipe_count < ?)
                             """,
@@ -234,7 +234,7 @@ def main():
                         _a = cur.execute(
                             """
                             SELECT text, freq, recipe_count FROM elements
-                                WHERE text <> "Nothing"
+                                WHERE text <> 'Nothing'
                                     AND recipe_count < ?
                                 ORDER BY freq DESC LIMIT ?
                             """,
@@ -430,7 +430,7 @@ def main():
                     elements = cur.execute(
                         """
                         SELECT text FROM elements
-                            WHERE text <> "Nothing"
+                            WHERE text <> 'Nothing'
                         """
                     ).fetchall()
                     elements = [x for x, in elements if x not in search]
@@ -467,7 +467,7 @@ def main():
                     data = cur.execute(
                         """
                         SELECT text, depth, yield, recipe_count, freq FROM elements
-                            WHERE text <> "Nothing"
+                            WHERE text <> 'Nothing'
                             ORDER BY depth ASC
                         """
                     ).fetchall()
@@ -548,7 +548,7 @@ def main():
                 elements = cur.execute(
                     f"""
                     SELECT text FROM elements
-                        WHERE text <> "Nothing"
+                        WHERE text <> 'Nothing'
                         ORDER BY {args.key}
                     """
                 ).fetchall()

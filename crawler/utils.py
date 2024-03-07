@@ -80,6 +80,56 @@ def recalculate_depth_tree(con, cur):
     con.commit()
 
 
+def recalculate_shortest_path(con, cur):
+    # Delete the shortest path table
+    cur.execute("DROP TABLE IF EXISTS shortest_path")
+
+    # Create the shortest path table
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS shortest_path (
+            output TEXT,
+            input1 TEXT,
+            input2 TEXT,
+            PRIMARY KEY (output),
+            FOREIGN KEY (input1) REFERENCES elements(text),
+            FOREIGN KEY (input2) REFERENCES elements(text),
+            FOREIGN KEY (output) REFERENCES elements(text)
+        )
+        """
+    )
+
+    # get the shortest path for each element
+    res = cur.execute(
+        """
+        WITH depths AS
+            (SELECT input1, e1.depth AS d1, input2, e2.depth AS d2, output, eo.depth AS do FROM recipes 
+                JOIN elements AS e1 ON input1 = e1.text
+                JOIN elements AS e2 ON input2 = e2.text
+                JOIN elements AS eo ON output = eo.text
+                WHERE e1.depth < eo.depth AND e2.depth < eo.depth)
+        INSERT OR REPLACE INTO shortest_path (output, input1, input2)
+        SELECT d1.output, d1.input1, d1.input2 FROM depths d1
+            JOIN (
+                SELECT output, MIN(d1 + d2) AS shortest FROM depths
+                GROUP BY output
+            ) shortest ON d1.output = shortest.output AND d1.d1 + d1.d2 = shortest.shortest
+"""
+    )
+
+    con.commit()
+
+
+#     cur.execute(
+#         """
+#         SELECT * FROM recipes
+#             GROUP BY output
+#             ORDER BY LENGTH(input1) + LENGTH(input2) ASC
+
+# """
+#     )
+
+
 def recalculate_yield(con, cur):
     # Set all counts to 0
     cur.execute("UPDATE elements SET yield = 0")
@@ -176,16 +226,53 @@ def combine(log, a, b):
 
 
 # Update the depth of a given element and propogate the change
-def recursive_update_depth(cur, con, element, depth):
+def recursive_update_depth(cur, con, a, b, element):
+    a, b = norm_recipe(a, b)
+    # Get the depth of the two input elements
+    d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[0]
+
+    d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[0]
+
+    depth = max(d1, d2) + 1
+
     # Get the old depth of the element
-    # log.debug(f"Updating depth of {element} to {depth}")
     old_depth = cur.execute(
         "SELECT depth FROM elements WHERE text = ?", (element,)
     ).fetchone()[0]
 
     # If the old depth was smaller, return
-    if old_depth <= depth:
+    if old_depth < depth:
         return
+    elif old_depth == depth:
+        # Here, we need to check if the shortest path has changed
+        # Get the old shortest path
+        s1, s2 = cur.execute(
+            "SELECT input1, input2 FROM shortest_path WHERE output = ?", (element,)
+        ).fetchone()
+
+        # Get the depths of the old shortest path
+        sd1 = cur.execute(
+            "SELECT depth FROM elements WHERE text = ?", (s1,)
+        ).fetchone()[0]
+        sd2 = cur.execute(
+            "SELECT depth FROM elements WHERE text = ?", (s2,)
+        ).fetchone()[0]
+
+        if d1 + d2 < sd1 + sd2:
+            cur.execute(
+                """
+                INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)
+                """,
+                (element, a, b),
+            )
+    else:
+        # Always update the shortest path as the depth has changed
+        cur.execute(
+            """
+            INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)
+            """,
+            (element, a, b),
+        )
 
     # Update the depth of the element
     cur.execute("UPDATE elements SET depth = ? WHERE text = ?", (depth, element))
@@ -197,15 +284,7 @@ def recursive_update_depth(cur, con, element, depth):
 
     # Propogate the change to the output elements
     for input1, input2, output in recipes:
-        # Get the depth of the two input elements
-        d1 = cur.execute(
-            "SELECT depth FROM elements WHERE text = ?", (input1,)
-        ).fetchone()[0]
-        d2 = cur.execute(
-            "SELECT depth FROM elements WHERE text = ?", (input2,)
-        ).fetchone()[0]
-
-        recursive_update_depth(cur, con, output, max(d1, d2) + 1)
+        recursive_update_depth(cur, con, input1, input2, output)
 
 
 def is_numeric(s: str) -> bool:
@@ -224,6 +303,8 @@ def async_insert_combination(log, a, b):
 
 
 def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
+    a, b = norm_recipe(a, b)
+
     # Insert the new recipe into the database
     cur.execute(
         "INSERT OR IGNORE INTO recipes VALUES (?, ?, ?)",
@@ -237,13 +318,6 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
         == 0
     )
 
-    # Get the depth of the input elements
-    d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[0]
-    d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[0]
-
-    # Calculate the depth of the new element
-    depth = max(d1, d2) + 1
-
     # Add 1 recipe count to both input elements
     cur.execute(
         "UPDATE elements SET recipe_count = recipe_count + 1 WHERE text = ? OR text = ?",
@@ -252,6 +326,17 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
 
     # if the element is new:
     if new_element:
+        # Get the depth of the input elements
+        d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[
+            0
+        ]
+        d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[
+            0
+        ]
+
+        # Calculate the depth of the new element
+        depth = max(d1, d2) + 1
+
         # Add 1 yield to both input elements
         cur.execute(
             "UPDATE elements SET yield = yield + 1 WHERE text = ? OR text = ?",
@@ -261,10 +346,17 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
         log.info(
             f"{purple + 'First Discovery' if is_new else green + 'New Element'}\n\t{a} + {b} = {emoji} {result}{reset}"
         )
+
         # Insert the new element into the database
         cur.execute(
             "INSERT OR IGNORE INTO elements VALUES (?, ?, ?, ?, 0, 0, ?)",
             (result, emoji, is_new, depth, a != result and b != result),
+        )
+
+        # Insert this recipe as the shortest path
+        cur.execute(
+            "INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)",
+            (result, a, b),
         )
     else:
         if a != result and b != result:
@@ -276,7 +368,6 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
 
         # Check if this element has been created before by the left and right elements
         # If it hasn't, update the yield respectively
-
         if (
             cur.execute(
                 """
@@ -305,7 +396,7 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
             )
 
         log.debug(f"{cyan}{a} + {b} = {emoji} {result}{reset}")
-        recursive_update_depth(cur, con, result, depth)
+        recursive_update_depth(cur, con, a, b, result)
 
     con.commit()
 
@@ -352,8 +443,10 @@ def insert_combination(log, pool, args, con, cur, inputs):
                 if not r.ready():
                     newres.append(r)
                 else:
-                    a, b, result, is_new, emoji = r.get()
-                    insert_recipe(log, cur, con, a, b, result, emoji, is_new)
+                    res = r.get()
+                    if res is not None:
+                        a, b, result, is_new, emoji = res
+                        insert_recipe(log, cur, con, a, b, result, emoji, is_new)
 
             results = newres
 
@@ -368,9 +461,11 @@ def insert_combination(log, pool, args, con, cur, inputs):
         text_results = []
 
         for r in results:
-            a, b, result, is_new, emoji = r.get()
-            text_results.append(result)
-            insert_recipe(log, cur, con, a, b, result, emoji, is_new)
+            res = r.get()
+            if res is not None:
+                a, b, result, is_new, emoji = res
+                text_results.append(result)
+                insert_recipe(log, cur, con, a, b, result, emoji, is_new)
     except KeyboardInterrupt:
         log.error("Keyboard Interrupt")
         # Cancel all the tasks

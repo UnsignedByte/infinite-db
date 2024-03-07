@@ -7,7 +7,12 @@ import os
 import numpy as np
 from fuzzywuzzy import process
 from fuzzywuzzy import fuzz
-from utils import recalculate_depth_tree, recalculate_yield, remove_nothings
+from utils import (
+    recalculate_depth_tree,
+    recalculate_yield,
+    remove_nothings,
+    recalculate_shortest_path,
+)
 
 # ANSI escape codes for color
 red = "\033[1;31m"
@@ -264,6 +269,7 @@ def summarize(cur):
     # Create a histogram of yields
     plt.clf()
     plt.hist(yields, bins=range(0, 101, 5))
+    plt.yscale("log")
 
     # Set labels and title
     plt.xlabel("Yield (Percentage)")
@@ -327,6 +333,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--recalculate-shortest-path",
+        help="Recalculate the shortest paths",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--remove-nothings",
         help="Remove recipes with 'Nothing' as an input",
         action="store_true",
@@ -347,6 +359,10 @@ if __name__ == "__main__":
     if args.recalculate_yield:
         recalculate_yield(con, cur)
         print(f"{green}Recalculated yield{reset}")
+
+    if args.recalculate_shortest_path:
+        recalculate_shortest_path(con, cur)
+        print(f"{green}Recalculated shortest path{reset}")
 
     if args.json:
         # Only output elements
