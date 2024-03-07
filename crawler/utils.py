@@ -265,6 +265,7 @@ def recursive_update_depth(cur, con, a, b, element):
                 """,
                 (element, a, b),
             )
+        return
     else:
         # Always update the shortest path as the depth has changed
         cur.execute(
@@ -451,12 +452,7 @@ def insert_combination(log, pool, args, con, cur, inputs):
             results = newres
 
             # Wait
-            time.sleep(
-                max(
-                    0.0,
-                    random.uniform(0.1, 0.12),
-                )
-            )
+            time.sleep(random.uniform(0.1, 0.12))
 
         text_results = []
 

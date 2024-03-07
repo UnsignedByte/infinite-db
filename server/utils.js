@@ -33,13 +33,13 @@ function elaborateRecipes(db, recipes) {
   });
 
   return getElements(db, Array.from(elements), true).then((elems) => {
-    const emojis = Object.fromEntries(elems.map((e) => [e.text, e.emoji]));
+    const data = Object.fromEntries(elems.map((e) => [e.text, e]));
 
     return recipes.map((r) => ({
       ...r,
-      input1: { text: r.input1, emoji: emojis[r.input1] },
-      input2: { text: r.input2, emoji: emojis[r.input2] },
-      output: { text: r.output, emoji: emojis[r.output] },
+      input1: data[r.input1],
+      input2: data[r.input2],
+      output: data[r.output],
     }));
   });
 }

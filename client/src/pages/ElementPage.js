@@ -60,7 +60,6 @@ function RecipeTable({ text, type }) {
   });
 
   const normalizeRecipes = (data) => {
-    console.log(data);
     if (type === "input") {
       data.recipes = data.recipes.map((row) => {
         // order the inputs so that the searched term is first
@@ -185,7 +184,7 @@ function ElementDetails({ data }) {
   return (
     <div>
       <h2>
-        Details for the element {data.emoji} {data.text}
+        Details for the element <Element element={data} />
       </h2>
       <p>First Discovered Here: {data.discovered ? "Yes" : "No"}</p>
       <p>Element Depth: {data.depth}</p>
