@@ -27,7 +27,7 @@ export default function Element({ element }) {
     <Button
       onClick={(e) => {
         e.preventDefault();
-        navigate(`/element/${encodeURIComponent(element.text)}`);
+        navigate(`/element/_${encodeURIComponent(element.text)}`);
       }}
     >
       {element.emoji && (

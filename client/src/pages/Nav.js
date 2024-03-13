@@ -46,16 +46,14 @@ export default function Nav() {
   const navigate = useNavigate();
 
   const handleSearch = () => {
-    if (searchText.trim() !== "") {
-      navigate(`/element/${encodeURIComponent(searchText)}`);
-    }
+    navigate(`/element/_${encodeURIComponent(searchText)}`);
   };
 
   const handleRandom = () => {
     fetch("/api/random")
       .then((res) => res.json())
       .then((data) => {
-        navigate(`/element/${encodeURIComponent(data.text)}`);
+        navigate(`/element/_${encodeURIComponent(data.text)}`);
       });
   };
 

@@ -1,12 +1,13 @@
 import random
 import sqlite3
-from utils import norm_recipe, insert_combination, setup_logging
+from utils import norm_recipe, insert_combination, setup_logging, read_group
 import argparse
 import itertools
 import numpy as np
 from wordfreq import word_frequency
 from wordfreq.tokens import lossy_tokenize
 from os import path
+import copy
 import multiprocessing
 
 # ANSI escape codes for color
@@ -49,7 +50,7 @@ def main():
     parser.add_argument(
         "--batch",
         type=int,
-        default=10,
+        default=100,
         help="The number of elements batch for random algorithms",
     )
 
@@ -107,7 +108,18 @@ def main():
         help="Invert the weights for the weighted random algorithm",
     )
 
+    parser.add_argument(
+        "--groups",
+        "-g",
+        type=str,
+        nargs="+",
+        help="The groups to use for the search algorithm",
+        default=[],
+    )
+
     args = parser.parse_args()
+
+    search = set.union(set(args.search), *[read_group(x) for x in args.groups])
 
     log = setup_logging()
 
@@ -297,7 +309,6 @@ def main():
 
             elif args.algorithm == "search":
                 # Starting pairs to search from
-                search = set(args.search)
                 search_exclude = set(args.search_exclude)
 
                 if len(search) == 0:
@@ -305,6 +316,9 @@ def main():
                         "No search elements provided. Use --search <element> <element> ..."
                     )
                     exit(1)
+
+                search_new = set()
+                search_missing = set()
 
                 # Make sure the elements exist
                 for element in search:
@@ -314,25 +328,46 @@ def main():
                         ).fetchone()[0]
                         == 0
                     ):
-                        log.error(f"Element {element} does not exist")
-                        exit(1)
+                        log.info(f"{element} does not exist, adding to goals.")
+                        search_missing.add(element)
+                    else:
+                        search_new.add(element)
+                search = search_new
+                initial_search = copy.deepcopy(search)
 
-                queue = list(itertools.combinations_with_replacement(search, 2))
+                queue = list(itertools.combinations_with_replacement(initial_search, 2))
 
                 while len(queue) > 0:
-                    insert_combination(log, pool, args, con, cur, queue)
+                    # Filter out the recipes that have already been tried
+                    # nqueue = []
+                    # changed = True
+                    # while changed:
+                    #     changed = False
+                    #     for a, b in queue:
+                    #         sel = cur.execute(
+                    #             "SELECT output FROM recipes WHERE input1 = ? AND input2 = ?",
+                    #             norm_recipe(a, b),
+                    #         ).fetchone()
+                    #         if sel is not None:
+                    #             if sel[0] in search_exclude:
+                    #                 continue
+                    #             search.add(sel[0])
+                    #             changed = True
+                    #             for x in search:
+                    #                 nqueue.append((sel[0], x))
+                    #         else:
+                    #             nqueue.append((a, b))
 
-                    results = []
-                    for a, b in queue:
-                        res = cur.execute(
-                            "SELECT output FROM recipes WHERE input1 = ? AND input2 = ?",
-                            norm_recipe(a, b),
-                        ).fetchone()
-                        results.append(res[0])
+                    #     queue = nqueue
 
-                    nqueue = []
+                    log.info(f"Queue length: {len(queue)}")
+                    batch = queue[: args.batch]
+                    insert_combination(log, pool, args, con, cur, batch)
 
-                    for (a, b), x in zip(queue, results):
+                    nqueue = queue[args.batch :]
+                    reset_search = False
+
+                    for a, b in batch:
                         # Get result if it exists and skip otherwise
                         res = cur.execute(
                             "SELECT output FROM recipes WHERE input1 = ? AND input2 = ?",
@@ -347,12 +382,27 @@ def main():
                         if res in search or res in search_exclude or res == "Nothing":
                             continue
 
+                        if res in search_missing:
+                            # We found an element that was missing
+                            search_missing.remove(res)
+                            initial_search.add(res)
+                            log.info(f"Found missing element {res}, adding to search")
+                            reset_search = True
+
                         search.add(res)
 
                         for x in search:
                             nqueue.append((res, x))
 
-                    queue = nqueue
+                    if reset_search:
+                        log.info(
+                            f"Resetting search with {len(initial_search)} initial elements"
+                        )
+                        queue = list(
+                            itertools.combinations_with_replacement(initial_search, 2)
+                        )
+                    else:
+                        queue = nqueue
             elif args.algorithm == "shortest":
                 # Sort by shortest words
                 while True:
@@ -400,8 +450,6 @@ def main():
 
             elif args.algorithm == "find":
                 # Remove the search elements from the search set
-
-                search = set(args.search)
 
                 import gensim.downloader
 
@@ -555,7 +603,7 @@ def main():
 
                 elements = [x for x, in elements]
 
-                search = set(args.search)
+                search_new = set()
 
                 # Make sure the elements exist
                 for element in search:
@@ -565,8 +613,10 @@ def main():
                         ).fetchone()[0]
                         == 0
                     ):
-                        log.error(f"Element {element} does not exist")
-                        exit(1)
+                        log.warn(f"Element {element} does not exist, skipping...")
+                    else:
+                        search_new.add(element)
+                search = search_new
 
                 batch = []
                 count = 0

@@ -15,7 +15,7 @@ const router = createBrowserRouter([
     element: <Root />,
   },
   {
-    path: "/element/:text",
+    path: "/element/:utext",
     element: <ElementPage />,
   },
 ]);

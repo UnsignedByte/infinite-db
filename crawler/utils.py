@@ -5,6 +5,8 @@ from urllib.parse import quote_plus
 import json
 import logging
 import sys
+import os
+from queue import SimpleQueue
 
 # ANSI escape codes for color
 red = "\033[1;31m"
@@ -27,6 +29,42 @@ def remove_nothings(con, cur):
     con.commit()
 
 
+def _recalculate_depth_tree(cur, depth):
+    while True:
+        # Filter all recipes using only elements with depth <= depth
+        # and at least one element with depth == depth
+        recipes = cur.execute(
+            """
+          SELECT DISTINCT output FROM recipes
+            JOIN elements AS e1 ON input1 = e1.text
+            JOIN elements AS e2 ON input2 = e2.text
+            WHERE (
+              e1.depth = ?
+              OR
+              e2.depth = ?
+            )
+            AND e1.depth <= ?
+            AND e2.depth <= ?
+          """,
+            (depth, depth, depth, depth),
+        ).fetchall()
+
+        print(f"Found {len(recipes)} recipes at depth {depth}")
+
+        # If no recipes were found, break
+        if len(recipes) == 0:
+            break
+
+        depth += 1
+
+        # Update the depth of the output elements
+        for recipe in recipes:
+            cur.execute(
+                "UPDATE elements SET depth = COALESCE(MIN(depth, ?), ?) WHERE text = ?",
+                (depth, depth, recipe[0]),
+            )
+
+
 def recalculate_depth_tree(con, cur):
 
     # Set depth of all elements to NULL
@@ -41,42 +79,7 @@ def recalculate_depth_tree(con, cur):
 
     depth = 0
 
-    while True:
-        # Filter all recipes using only elements with depth <= depth
-        # and at least one element with depth == depth
-        recipes = cur.execute(
-            """
-          SELECT DISTINCT output FROM recipes
-            WHERE (
-              (SELECT depth FROM elements WHERE text = input1) = ?
-              OR
-              (SELECT depth FROM elements WHERE text = input2) = ?
-            )
-            AND (SELECT depth FROM elements WHERE text = input1) <= ?
-            AND (SELECT depth FROM elements WHERE text = input2) <= ?
-            
-          """,
-            (depth, depth, depth, depth),
-        ).fetchall()
-
-        # If no recipes were found, break
-        if len(recipes) == 0:
-            break
-
-        depth += 1
-
-        # Update the depth of the output elements
-        for recipe in recipes:
-            # # count if this element was updated
-            # updates += cur.execute(
-            #     "SELECT COUNT(*) FROM elements WHERE depth > ? AND text = ?",
-            #     (depth, recipe[0]),
-            # ).fetchone()[0]
-
-            cur.execute(
-                "UPDATE elements SET depth = COALESCE(MIN(depth, ?), ?) WHERE text = ?",
-                (depth, depth, recipe[0]),
-            )
+    _recalculate_depth_tree(cur, depth)
     con.commit()
 
 
@@ -200,7 +203,7 @@ def combine(log, a, b):
             # print(s.headers)
             r = s.get(
                 f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
-                timeout=10,
+                timeout=30,
             )
             s.cookies.update(r.cookies)
             if r.status_code == 500:
@@ -211,7 +214,10 @@ def combine(log, a, b):
                 raise Exception("Forbidden")
             elif r.status_code != 200:
                 raise Exception(r.status_code)
-            j = json.loads(r.content)
+            # Trim the response until the first {
+            r = r.text[r.text.find("{") : r.text.rfind("}") + 1]
+            j = json.loads(r)
+            print(j)
             if "emoji" not in j:
                 print(a, b, j)
             return (j["result"], j["isNew"], j["emoji"])
@@ -221,71 +227,95 @@ def combine(log, a, b):
             time.sleep(60)
         except Exception as e:
             log.error(f"Failed to combine {a} and {b}: {e}")
+            raise e
 
     raise Exception("Failed to combine elements")
 
 
 # Update the depth of a given element and propogate the change
-def recursive_update_depth(cur, con, a, b, element):
-    a, b = norm_recipe(a, b)
-    # Get the depth of the two input elements
-    d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[0]
+def recursive_update_depth(cur, a, b, element, old_depth, depth):
+    q = SimpleQueue()
+    q.put((a, b, element, old_depth, depth))
+    count = 1
 
-    d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[0]
+    while count > 0:
+        if count > 1000:
+            # Too many things to update here, swap to the recalculate method
+            _recalculate_depth_tree(cur, depth)
+            return
+        a, b, element, old_depth, depth = q.get()
+        count -= 1
 
-    depth = max(d1, d2) + 1
+        if old_depth < depth:
+            return
+        elif old_depth == depth:
+            # Here, we need to check if the shortest path has changed
+            # Get the old shortest path
+            s1, s2 = cur.execute(
+                "SELECT input1, input2 FROM shortest_path WHERE output = ?", (element,)
+            ).fetchone()
 
-    # Get the old depth of the element
-    old_depth = cur.execute(
-        "SELECT depth FROM elements WHERE text = ?", (element,)
-    ).fetchone()[0]
+            # Get the depth of the two input elements
+            d1 = cur.execute(
+                "SELECT depth FROM elements WHERE text = ?", (a,)
+            ).fetchone()[0]
 
-    # If the old depth was smaller, return
-    if old_depth < depth:
-        return
-    elif old_depth == depth:
-        # Here, we need to check if the shortest path has changed
-        # Get the old shortest path
-        s1, s2 = cur.execute(
-            "SELECT input1, input2 FROM shortest_path WHERE output = ?", (element,)
-        ).fetchone()
+            d2 = cur.execute(
+                "SELECT depth FROM elements WHERE text = ?", (b,)
+            ).fetchone()[0]
 
-        # Get the depths of the old shortest path
-        sd1 = cur.execute(
-            "SELECT depth FROM elements WHERE text = ?", (s1,)
-        ).fetchone()[0]
-        sd2 = cur.execute(
-            "SELECT depth FROM elements WHERE text = ?", (s2,)
-        ).fetchone()[0]
+            # Get the depths of the old shortest path
+            sd1 = cur.execute(
+                "SELECT depth FROM elements WHERE text = ?", (s1,)
+            ).fetchone()[0]
+            sd2 = cur.execute(
+                "SELECT depth FROM elements WHERE text = ?", (s2,)
+            ).fetchone()[0]
 
-        if d1 + d2 < sd1 + sd2:
+            if d1 + d2 < sd1 + sd2:
+                cur.execute(
+                    """
+                    INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)
+                    """,
+                    (element, a, b),
+                )
+            return
+        else:
+            # Always update the shortest path as the depth has changed
             cur.execute(
                 """
                 INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)
                 """,
                 (element, a, b),
             )
-        return
-    else:
-        # Always update the shortest path as the depth has changed
-        cur.execute(
+
+        print(f"Updating depth of {element} from {old_depth} to {depth}")
+
+        # Update the depth of the element
+        cur.execute("UPDATE elements SET depth = ? WHERE text = ?", (depth, element))
+
+        # Find all recipes that use the element
+        recipes = cur.execute(
             """
-            INSERT OR REPLACE INTO shortest_path (output, input1, input2) VALUES (?, ?, ?)
+            SELECT input1, e1.depth, input2, e2.depth, output, eo.depth FROM recipes
+                JOIN elements AS e1 ON input1 = e1.text
+                JOIN elements AS e2 ON input2 = e2.text
+                JOIN elements AS eo ON output = eo.text
+                WHERE (input1 = ? OR input2 = ?)
+                    AND eo.depth >= ?
             """,
-            (element, a, b),
-        )
+            (element, element, depth + 1),
+        ).fetchall()
 
-    # Update the depth of the element
-    cur.execute("UPDATE elements SET depth = ? WHERE text = ?", (depth, element))
+        # Propogate the change to the output elements
+        for input1, d1, input2, d2, output, old_depth in recipes:
+            if input1 == element:
+                d1 = depth
+            if input2 == element:
+                d2 = depth
 
-    # Find all recipes that use the element
-    recipes = cur.execute(
-        "SELECT * FROM recipes WHERE input1 = ? OR input2 = ?", (element, element)
-    ).fetchall()
-
-    # Propogate the change to the output elements
-    for input1, input2, output in recipes:
-        recursive_update_depth(cur, con, input1, input2, output)
+            q.put((input1, input2, output, old_depth, max(d1, d2) + 1))
+            count += 1
 
 
 def is_numeric(s: str) -> bool:
@@ -325,18 +355,15 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
         (a, b),
     )
 
+    # Get the depth of the input elements
+    d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[0]
+    d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[0]
+
+    # Calculate the depth of the new element
+    depth = max(d1, d2) + 1
+
     # if the element is new:
     if new_element:
-        # Get the depth of the input elements
-        d1 = cur.execute("SELECT depth FROM elements WHERE text = ?", (a,)).fetchone()[
-            0
-        ]
-        d2 = cur.execute("SELECT depth FROM elements WHERE text = ?", (b,)).fetchone()[
-            0
-        ]
-
-        # Calculate the depth of the new element
-        depth = max(d1, d2) + 1
 
         # Add 1 yield to both input elements
         cur.execute(
@@ -397,12 +424,18 @@ def insert_recipe(log, cur, con, a, b, result, emoji, is_new):
             )
 
         log.debug(f"{cyan}{a} + {b} = {emoji} {result}{reset}")
-        recursive_update_depth(cur, con, a, b, result)
+
+        old_depth = cur.execute(
+            "SELECT depth FROM elements WHERE text = ?", (result,)
+        ).fetchone()[0]
+
+        if old_depth >= depth:
+            recursive_update_depth(cur, a, b, result, old_depth, depth)
 
     con.commit()
 
 
-def insert_combination(log, pool, args, con, cur, inputs):
+def insert_combination(log, pool, args, con, cur, inputs) -> list[str]:
     # Filter out numeric elements
     if args.skip_numeric:
         inputs = [(a, b) for a, b in inputs if not (is_numeric(a) or is_numeric(b))]
@@ -429,6 +462,7 @@ def insert_combination(log, pool, args, con, cur, inputs):
     log.info(f"Pushing new batch with {len(inputs)} items")
 
     results = []
+    text_results = []
 
     try:
         for a, b in inputs:
@@ -439,6 +473,8 @@ def insert_combination(log, pool, args, con, cur, inputs):
                 )
             )
 
+            t_start = time.time()
+
             newres = []
             for r in results:
                 if not r.ready():
@@ -447,14 +483,18 @@ def insert_combination(log, pool, args, con, cur, inputs):
                     res = r.get()
                     if res is not None:
                         a, b, result, is_new, emoji = res
+                        text_results.append(result)
                         insert_recipe(log, cur, con, a, b, result, emoji, is_new)
 
             results = newres
 
             # Wait
-            time.sleep(random.uniform(0.1, 0.12))
-
-        text_results = []
+            time.sleep(
+                max(
+                    random.uniform(0.1, 0.12) - (time.time() - t_start),
+                    0,
+                )
+            )
 
         for r in results:
             res = r.get()
@@ -499,3 +539,9 @@ def setup_logging():
     )
 
     return log
+
+
+def read_group(fname: str) -> set[str]:
+    root = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(root, "groups", f"{fname}.txt"), "r") as f:
+        return set(f.read().splitlines())

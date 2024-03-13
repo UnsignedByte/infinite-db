@@ -255,7 +255,9 @@ function ElementDetails({ data }) {
 }
 
 export default function ElementPage() {
-  const { text } = useParams();
+  const { utext } = useParams();
+
+  const text = utext.slice(1); // remove the leading underscore
 
   const [data, setData] = useState();
 
