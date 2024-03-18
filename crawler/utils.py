@@ -181,17 +181,21 @@ headers = {
     "method": "GET",
     "scheme": "https",
     "Accept": "*/*",
-    "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "en-US,en;q=0.9",
     "Referer": "https://neal.fun/infinite-craft/",
     "Origin": "https://neal.fun",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
     "Sec-Ch-Ua-Platform": "Windows",
+    "Sec-Ch-Ua-Platform-Version": '"15.0.0"',
     "Sec-Fetch-Site": "same-origin",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Dest": "empty",
     "Sec-Ch-Ua-Mobile": "?0",
     "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122"',
+    "Credentials": "include",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Connection": "keep-alive",
 }
 s = requests.Session()
 s.headers.update(headers)
@@ -205,6 +209,10 @@ def combine(log, a, b):
                 f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
                 timeout=30,
             )
+            print(
+                "Fetching",
+                f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
+            )
             s.cookies.update(r.cookies)
             if r.status_code == 500:
                 raise Exception("Internal Server Error")
@@ -215,9 +223,10 @@ def combine(log, a, b):
             elif r.status_code != 200:
                 raise Exception(r.status_code)
             # Trim the response until the first {
-            r = r.text[r.text.find("{") : r.text.rfind("}") + 1]
-            j = json.loads(r)
-            print(j)
+            print(r.text)
+            print(r.content)
+            # r = r.text[r.text.find("{") : r.text.rfind("}") + 1]
+            j = json.loads(r.text)
             if "emoji" not in j:
                 print(a, b, j)
             return (j["result"], j["isNew"], j["emoji"])
@@ -227,7 +236,8 @@ def combine(log, a, b):
             time.sleep(60)
         except Exception as e:
             log.error(f"Failed to combine {a} and {b}: {e}")
-            raise e
+            log.debug(f"Retrying in 1 second")
+            time.sleep(1)
 
     raise Exception("Failed to combine elements")
 
@@ -504,9 +514,7 @@ def insert_combination(log, pool, args, con, cur, inputs) -> list[str]:
                 insert_recipe(log, cur, con, a, b, result, emoji, is_new)
     except KeyboardInterrupt:
         log.error("Keyboard Interrupt")
-        # Cancel all the tasks
-        for r in results:
-            r.cancel()
+        pool.terminate()
         raise
 
     return text_results

@@ -115,7 +115,7 @@ app.get(
 
       // Create a list of all words
       const words = rows.map((row) => row.text);
-      const limit = Number(req.query.limit || 100);
+      const limit = Math.max(0, Number(req.query.limit || 100));
 
       // Use fuzzball to find the most similar word
       const similar = fuzz.extract(term, words, {
@@ -202,8 +202,13 @@ app.get(
     }
 
     const term = decodeURIComponent(req.query.text); // Get the search term from the query parameter
-    const offset = Number(req.query.offset || 0);
-    const limit = Number(req.query.limit || 10);
+    const offset = Math.max(0, Number(req.query.offset || 0));
+    let limit = Math.min(Number(req.query.limit || 10), 1000);
+
+    // if limit <= zero, set it to 1000
+    if (limit <= 0) {
+      limit = 1000;
+    }
 
     const type = req.params.filter;
 
@@ -218,24 +223,35 @@ app.get(
             [term],
           ];
 
-    db.all(...query, (err, rows) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
+    // Get the count of th recipes
+    db.get(
+      `SELECT COUNT(*) AS count FROM (${query[0]})`,
+      query[1],
+      (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+
+        // Get the recipes
+        db.all(
+          `${query[0]} LIMIT ? OFFSET ?`,
+          [...query[1], limit, offset],
+          (err, rows) => {
+            if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+            }
+
+            utils
+              .elaborateRecipes(db, rows)
+              .then((rows) =>
+                res.status(200).json({ recipes: rows, count: row.count })
+              );
+          }
+        );
       }
-
-      const l = rows.length;
-
-      if (limit > 0) {
-        rows = rows.slice(offset, offset + limit);
-      } else {
-        rows = rows.slice(offset);
-      }
-
-      utils
-        .elaborateRecipes(db, rows)
-        .then((rows) => res.status(200).json({ recipes: rows, count: l }));
-    });
+    );
   }
 );
 
@@ -277,8 +293,8 @@ app.get(
   (req, res) => {
     const key = req.query.key || "depth";
     const descending = req.query.descending === "true";
-    const offset = Number(req.query.offset || 0);
-    const limit = Number(req.query.limit || 100);
+    const offset = Math.max(0, Number(req.query.offset || 0));
+    const limit = Math.max(0, Number(req.query.limit || 100));
 
     const boolDesc = (d) => (d ? "DESC" : "ASC");
 

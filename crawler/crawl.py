@@ -40,6 +40,13 @@ def main():
     )
 
     parser.add_argument(
+        "--sort",
+        type=str,
+        default="text ASC",
+        help="The sort order for the elements",
+    )
+
+    parser.add_argument(
         "--algorithm",
         "-a",
         type=str,
@@ -129,7 +136,7 @@ def main():
 
     root = path.dirname(__file__)
 
-    con = sqlite3.connect(path.join(root, "infinite_craft.db"), timeout=60)
+    con = sqlite3.connect(path.join(root, "infinite_craft.db"), timeout=120)
     cur = con.cursor()
 
     # Insert default elements if they don't exist
@@ -155,12 +162,14 @@ def main():
                 while True:
                     # Get all elements with the current idx
                     delements = cur.execute(
-                        f"SELECT text FROM elements WHERE {args.key} = ?", (idx,)
+                        f"SELECT text FROM elements WHERE {args.key} = ? ORDER BY {args.sort}",
+                        (idx,),
                     ).fetchall()
 
                     # Get all elements with <= current idx
                     lelements = cur.execute(
-                        f"SELECT text FROM elements WHERE {args.key} <= ?", (idx,)
+                        f"SELECT text FROM elements WHERE {args.key} <= ? ORDER BY {args.sort}",
+                        (idx,),
                     ).fetchall()
 
                     log.info(
