@@ -136,7 +136,7 @@ def main():
 
     root = path.dirname(__file__)
 
-    con = sqlite3.connect(path.join(root, "infinite_craft.db"), timeout=120)
+    con = sqlite3.connect(path.join(root, "infinite_craft.db"), timeout=600)
     cur = con.cursor()
 
     # Insert default elements if they don't exist

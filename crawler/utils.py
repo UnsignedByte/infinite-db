@@ -209,10 +209,10 @@ def combine(log, a, b):
                 f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
                 timeout=30,
             )
-            print(
-                "Fetching",
-                f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
-            )
+            # print(
+            #     "Fetching",
+            #     f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
+            # )
             s.cookies.update(r.cookies)
             if r.status_code == 500:
                 raise Exception("Internal Server Error")
@@ -223,8 +223,8 @@ def combine(log, a, b):
             elif r.status_code != 200:
                 raise Exception(r.status_code)
             # Trim the response until the first {
-            print(r.text)
-            print(r.content)
+            # print(r.text)
+            # print(r.content)
             # r = r.text[r.text.find("{") : r.text.rfind("}") + 1]
             j = json.loads(r.text)
             if "emoji" not in j:
