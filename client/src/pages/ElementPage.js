@@ -107,9 +107,9 @@ function RecipeTable({ text, type }) {
       .then(concatRecipes);
   };
 
-  const showAll = () => {
+  const thousandMore = () => {
     fetch(
-      `/api/recipes/${type}?text=${uriText}&offset=${recipes.recipes.length}&limit=0`
+      `/api/recipes/${type}?text=${uriText}&offset=${recipes.recipes.length}&limit=1000`
     )
       .then((res) => res.json())
       .then(concatRecipes);
@@ -156,10 +156,10 @@ function RecipeTable({ text, type }) {
           Showing {recipes.recipes.length} of {recipes.count} recipes.
         </div>
         <div className="col">
-          <Button onClick={showMore}>Show More</Button>
+          <Button onClick={showMore}>10 More</Button>
         </div>
         <div className="col">
-          <Button onClick={showAll}>Show All</Button>
+          <Button onClick={thousandMore}>1000 More</Button>
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ export default function Root() {
     { value: "freq", label: "Ways Created" },
     { value: "discovered", label: "First Discovery" },
     { value: "yield", label: "Yield" },
+    { value: "random", label: "Random" },
   ];
 
   const IconButton = styled.button`

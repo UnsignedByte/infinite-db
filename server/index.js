@@ -294,7 +294,7 @@ app.get(
     const key = req.query.key || "depth";
     const descending = req.query.descending === "true";
     const offset = Math.max(0, Number(req.query.offset || 0));
-    const limit = Math.max(0, Number(req.query.limit || 100));
+    const limit = Math.min(10000, Math.max(0, Number(req.query.limit || 100)));
 
     const boolDesc = (d) => (d ? "DESC" : "ASC");
 
@@ -310,6 +310,7 @@ app.get(
           THEN 0
           ELSE CAST(yield as REAL) / recipe_count
         END ${boolDesc(descending)}, recipe_count`,
+      random: "RANDOM()",
     };
 
     if (!(key in keymap)) {
