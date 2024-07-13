@@ -44,7 +44,7 @@ function elaborateRecipes(db, recipes) {
   });
 }
 
-async function find_path(db, target, paths = {}) {
+async function find_path(res, db, target, paths = {}) {
   if (target in paths) {
     return paths;
   }
@@ -106,12 +106,12 @@ async function find_path(db, target, paths = {}) {
   };
 
   if (!(recipe.input1 in paths)) {
-    const p = await find_path(db, recipe.input1, paths);
+    const p = await find_path(res, db, recipe.input1, paths);
     paths = { ...paths, ...p };
   }
 
   if (!(recipe.input2 in paths)) {
-    const p = await find_path(db, recipe.input2, paths);
+    const p = await find_path(res, db, recipe.input2, paths);
     paths = { ...paths, ...p };
   }
 

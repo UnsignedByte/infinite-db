@@ -268,7 +268,7 @@ app.get(
 
     const term = decodeURIComponent(req.query.text);
 
-    utils.find_path(db, term).then((paths) => {
+    utils.find_path(res, db, term).then((paths) => {
       // Make it into a list and filter out depth 0 elements
       paths = Object.keys(paths)
         .map((key) => ({ output: key, ...paths[key] }))

@@ -205,14 +205,14 @@ def combine(log, a, b):
     for _ in range(10):
         try:
             # print(s.headers)
-            r = s.get(
-                f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
-                timeout=30,
-            )
             # print(
             #     "Fetching",
             #     f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
             # )
+            r = s.get(
+                f"https://neal.fun/api/infinite-craft/pair?first={quote_plus(a)}&second={quote_plus(b)}",
+                timeout=30,
+            )
             s.cookies.update(r.cookies)
             if r.status_code == 500:
                 raise Exception("Internal Server Error")
@@ -234,10 +234,6 @@ def combine(log, a, b):
             log.error(f"Timed Out {a} and {b}: {e}")
             log.debug(f"Retrying in 1 Minute")
             time.sleep(60)
-        except Exception as e:
-            log.error(f"Failed to combine {a} and {b}: {e}")
-            log.debug(f"Retrying in 1 second")
-            time.sleep(1)
 
     raise Exception("Failed to combine elements")
 
